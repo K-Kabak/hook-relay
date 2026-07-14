@@ -1,0 +1,41 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      NODE_ENV: test
+      DATABASE_URL: postgresql://hookrelay:hookrelay@localhost:5432/hookrelay?schema=public
+      REDIS_URL: redis://localhost:6379
+      JWT_SECRET: ci-only-jwt-secret-with-at-least-32-characters
+      API_KEY_PEPPER: ci-only-api-pepper-with-at-least-32-characters
+      WEB_ORIGIN: http://localhost:3000
+      NEXT_PUBLIC_API_URL: http://localhost:3001/api/v1
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Enable pnpm
+        run: corepack prepare pnpm@11.13.0 --activate
+      - name: Install dependencies
+        run: corepack pnpm install --frozen-lockfile
+      - name: Generate Prisma client
+        run: corepack pnpm db:generate
+      - name: Lint
+        run: corepack pnpm lint
+      - name: Typecheck
+        run: corepack pnpm typecheck
+      - name: Test
+        run: corepack pnpm test
+      - name: Build
+        run: corepack pnpm build
