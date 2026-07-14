@@ -10,7 +10,7 @@
     "build": "corepack pnpm -r --if-present build",
     "dev": "corepack pnpm --parallel --filter @hookrelay/api --filter @hookrelay/worker --filter @hookrelay/web dev",
     "lint": "eslint . --max-warnings=0",
-    "typecheck": "corepack pnpm -r --if-present typecheck",
+    "typecheck": "corepack pnpm --filter @hookrelay/shared build && corepack pnpm --filter @hookrelay/database build && corepack pnpm -r --if-present typecheck",
     "test": "corepack pnpm -r --if-present test",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
