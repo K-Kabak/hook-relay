@@ -7,7 +7,12 @@ import {
   Post,
   UseGuards,
 } from '@nestjs/common';
-import { ApiCookieAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import {
+  ApiCookieAuth,
+  ApiOperation,
+  ApiProperty,
+  ApiTags,
+} from '@nestjs/swagger';
 import { IsString, Length } from 'class-validator';
 import { generateApiKey, hashApiKey } from '@hookrelay/shared';
 import { AuthGuard, CurrentUserId } from './auth';
@@ -15,7 +20,10 @@ import { config } from './config';
 import { ProjectsService } from './projects';
 
 export class ApiKeyDto {
-  @IsString() @Length(2, 80) name!: string;
+  @ApiProperty({ example: 'Production publisher' })
+  @IsString()
+  @Length(2, 80)
+  name!: string;
 }
 
 @ApiTags('API keys')

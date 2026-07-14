@@ -9,13 +9,21 @@ import {
   Post,
   UseGuards,
 } from '@nestjs/common';
-import { ApiCookieAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import {
+  ApiCookieAuth,
+  ApiOperation,
+  ApiProperty,
+  ApiTags,
+} from '@nestjs/swagger';
 import { IsString, Length } from 'class-validator';
 import { AuthGuard, CurrentUserId } from './auth';
 import { PrismaService } from './prisma.service';
 
 export class ProjectDto {
-  @IsString() @Length(2, 80) name!: string;
+  @ApiProperty({ example: 'Payments platform' })
+  @IsString()
+  @Length(2, 80)
+  name!: string;
 }
 
 function slugify(name: string) {

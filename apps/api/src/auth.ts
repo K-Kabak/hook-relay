@@ -12,7 +12,14 @@ import {
   UnauthorizedException,
   UseGuards,
 } from '@nestjs/common';
-import { ApiCookieAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBadRequestResponse,
+  ApiCookieAuth,
+  ApiOperation,
+  ApiProperty,
+  ApiTags,
+  ApiUnauthorizedResponse,
+} from '@nestjs/swagger';
 import { JwtService } from '@nestjs/jwt';
 import argon2 from 'argon2';
 import { IsEmail, IsString, Length, MinLength } from 'class-validator';
@@ -24,14 +31,19 @@ const COOKIE = 'hookrelay_session';
 type AuthRequest = Request & { userId?: string };
 
 export class RegisterDto {
-  @IsEmail() email!: string;
-  @IsString() @Length(2, 80) name!: string;
-  @IsString() @MinLength(8) password!: string;
+  @ApiProperty({ example: 'alice@example.com' }) @IsEmail() email!: string;
+  @ApiProperty({ example: 'Alice' }) @IsString() @Length(2, 80) name!: string;
+  @ApiProperty({ example: 'correct-horse-battery-staple', minLength: 8 })
+  @IsString()
+  @MinLength(8)
+  password!: string;
 }
 
 export class LoginDto {
-  @IsEmail() email!: string;
-  @IsString() password!: string;
+  @ApiProperty({ example: 'alice@example.com' }) @IsEmail() email!: string;
+  @ApiProperty({ example: 'correct-horse-battery-staple' })
+  @IsString()
+  password!: string;
 }
 
 @Injectable()
@@ -77,6 +89,9 @@ export class AuthController {
 
   @Post('register')
   @ApiOperation({ summary: 'Register and start a session' })
+  @ApiBadRequestResponse({
+    description: 'The submitted account data is invalid',
+  })
   async register(
     @Body() dto: RegisterDto,
     @Res({ passthrough: true }) response: Response,
@@ -97,6 +112,7 @@ export class AuthController {
 
   @Post('login')
   @ApiOperation({ summary: 'Log in with email and password' })
+  @ApiUnauthorizedResponse({ description: 'The credentials are invalid' })
   async login(
     @Body() dto: LoginDto,
     @Res({ passthrough: true }) response: Response,

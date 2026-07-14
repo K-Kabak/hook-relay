@@ -14,11 +14,14 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import {
+  ApiBadRequestResponse,
   ApiCookieAuth,
   ApiHeader,
   ApiOperation,
+  ApiProperty,
   ApiSecurity,
   ApiTags,
+  ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import { DeliveryStatus, Prisma } from '@hookrelay/database';
 import { verifyApiKey } from '@hookrelay/shared';
@@ -30,8 +33,17 @@ import { PrismaService } from './prisma.service';
 import { ProjectsService } from './projects';
 
 export class PublishEventDto {
-  @IsString() @Length(1, 120) type!: string;
-  @IsObject() payload!: Record<string, unknown>;
+  @ApiProperty({ example: 'order.created' })
+  @IsString()
+  @Length(1, 120)
+  type!: string;
+  @ApiProperty({
+    example: { orderId: 'order_123', amount: 19900 },
+    type: 'object',
+    additionalProperties: true,
+  })
+  @IsObject()
+  payload!: Record<string, unknown>;
 }
 
 @Injectable()
@@ -130,6 +142,10 @@ export class EventIngestionController {
   @ApiHeader({ name: 'Idempotency-Key', required: true })
   @ApiOperation({
     summary: 'Publish an idempotent event using a project API key',
+  })
+  @ApiBadRequestResponse({ description: 'Headers or event body are invalid' })
+  @ApiUnauthorizedResponse({
+    description: 'The API key is missing, revoked, or invalid',
   })
   publish(
     @Headers('x-api-key') key: string,

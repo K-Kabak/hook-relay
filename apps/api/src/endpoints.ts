@@ -8,7 +8,13 @@ import {
   Post,
   UseGuards,
 } from '@nestjs/common';
-import { ApiCookieAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import {
+  ApiCookieAuth,
+  ApiOperation,
+  ApiProperty,
+  ApiPropertyOptional,
+  ApiTags,
+} from '@nestjs/swagger';
 import {
   IsBoolean,
   IsOptional,
@@ -22,7 +28,11 @@ import { DeliveryQueue } from './queue.service';
 import { ProjectsService } from './projects';
 
 export class CreateEndpointDto {
-  @IsString() @Length(2, 80) name!: string;
+  @ApiProperty({ example: 'Billing production' })
+  @IsString()
+  @Length(2, 80)
+  name!: string;
+  @ApiProperty({ example: 'https://example.com/webhooks/hookrelay' })
   @IsUrl({
     protocols: ['http', 'https'],
     require_protocol: true,
@@ -32,7 +42,12 @@ export class CreateEndpointDto {
 }
 
 export class UpdateEndpointDto {
-  @IsOptional() @IsString() @Length(2, 80) name?: string;
+  @ApiPropertyOptional({ example: 'Billing production' })
+  @IsOptional()
+  @IsString()
+  @Length(2, 80)
+  name?: string;
+  @ApiPropertyOptional({ example: 'https://example.com/webhooks/hookrelay' })
   @IsOptional()
   @IsUrl({
     protocols: ['http', 'https'],
@@ -40,7 +55,10 @@ export class UpdateEndpointDto {
     require_tld: false,
   })
   url?: string;
-  @IsOptional() @IsBoolean() isActive?: boolean;
+  @ApiPropertyOptional({ example: false })
+  @IsOptional()
+  @IsBoolean()
+  isActive?: boolean;
 }
 
 @ApiTags('Webhook endpoints')
