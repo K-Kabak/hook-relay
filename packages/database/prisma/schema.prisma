@@ -1,0 +1,125 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum DeliveryStatus {
+  PENDING
+  PROCESSING
+  DELIVERED
+  RETRYING
+  FAILED
+}
+
+model User {
+  id           String    @id @default(uuid()) @db.Uuid
+  email        String    @unique
+  passwordHash String
+  name         String
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  projects     Project[]
+}
+
+model Project {
+  id        String            @id @default(uuid()) @db.Uuid
+  userId    String            @db.Uuid
+  name      String
+  slug      String
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
+  user      User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  apiKeys   ApiKey[]
+  endpoints WebhookEndpoint[]
+  events    Event[]
+
+  @@unique([userId, slug])
+  @@index([userId])
+}
+
+model ApiKey {
+  id         String    @id @default(uuid()) @db.Uuid
+  projectId  String    @db.Uuid
+  name       String
+  keyPrefix  String
+  keyHash    String
+  createdAt  DateTime  @default(now())
+  lastUsedAt DateTime?
+  revokedAt  DateTime?
+  project    Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([keyPrefix])
+  @@index([projectId, revokedAt])
+}
+
+model WebhookEndpoint {
+  id        String     @id @default(uuid()) @db.Uuid
+  projectId String     @db.Uuid
+  name      String
+  url       String
+  secret    String
+  isActive  Boolean    @default(true)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  project   Project    @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  deliveries Delivery[]
+
+  @@index([projectId, isActive])
+}
+
+model Event {
+  id             String     @id @default(uuid()) @db.Uuid
+  projectId      String     @db.Uuid
+  type           String
+  payload        Json
+  idempotencyKey String
+  createdAt      DateTime   @default(now())
+  project        Project    @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  deliveries     Delivery[]
+
+  @@unique([projectId, idempotencyKey])
+  @@index([projectId, createdAt(sort: Desc)])
+}
+
+model Delivery {
+  id               String           @id @default(uuid()) @db.Uuid
+  eventId          String           @db.Uuid
+  endpointId       String           @db.Uuid
+  status           DeliveryStatus   @default(PENDING)
+  attemptCount     Int              @default(0)
+  nextAttemptAt    DateTime?
+  lastStatusCode   Int?
+  lastResponseBody String?
+  lastError        String?
+  deliveredAt      DateTime?
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  event            Event            @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  endpoint         WebhookEndpoint  @relation(fields: [endpointId], references: [id], onDelete: Restrict)
+  attempts         DeliveryAttempt[]
+
+  @@unique([eventId, endpointId])
+  @@index([eventId])
+  @@index([endpointId, status])
+  @@index([status, nextAttemptAt])
+}
+
+model DeliveryAttempt {
+  id           String    @id @default(uuid()) @db.Uuid
+  deliveryId   String    @db.Uuid
+  attemptNumber Int
+  statusCode   Int?
+  responseBody String?
+  error        String?
+  durationMs   Int
+  createdAt    DateTime  @default(now())
+  delivery     Delivery  @relation(fields: [deliveryId], references: [id], onDelete: Cascade)
+
+  @@unique([deliveryId, attemptNumber])
+  @@index([deliveryId, createdAt])
+}
+
