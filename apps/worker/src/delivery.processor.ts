@@ -27,11 +27,20 @@ export class DeliveryProcessor {
     });
     if (!delivery) throw new UnrecoverableError('Delivery not found');
     if (!delivery.endpoint.isActive) {
-      await this.prisma.delivery.update({ where: { id: delivery.id }, data: { status: DeliveryStatus.FAILED, lastError: 'Endpoint is disabled' } });
+      await this.prisma.delivery.update({
+        where: { id: delivery.id },
+        data: {
+          status: DeliveryStatus.FAILED,
+          lastError: 'Endpoint is disabled',
+        },
+      });
       throw new UnrecoverableError('Endpoint is disabled');
     }
 
-    await this.prisma.delivery.update({ where: { id: delivery.id }, data: { status: DeliveryStatus.PROCESSING, nextAttemptAt: null } });
+    await this.prisma.delivery.update({
+      where: { id: delivery.id },
+      data: { status: DeliveryStatus.PROCESSING, nextAttemptAt: null },
+    });
     const attemptNumber = delivery.attemptCount + 1;
     const envelope: WebhookEnvelope = {
       id: delivery.event.id,
@@ -54,7 +63,12 @@ export class DeliveryProcessor {
           'User-Agent': 'HookRelay',
           'Webhook-Id': delivery.event.id,
           'Webhook-Timestamp': timestamp,
-          'Webhook-Signature': signWebhook(delivery.event.id, timestamp, rawBody, delivery.endpoint.secret),
+          'Webhook-Signature': signWebhook(
+            delivery.event.id,
+            timestamp,
+            rawBody,
+            delivery.endpoint.secret,
+          ),
         },
         body: rawBody,
         signal: AbortSignal.timeout(this.timeoutMs),
@@ -62,20 +76,36 @@ export class DeliveryProcessor {
       statusCode = response.status;
       responseBody = truncateResponseBody(await response.text());
     } catch (error) {
-      errorMessage = error instanceof Error ? error.message : 'Unknown connection error';
+      errorMessage =
+        error instanceof Error ? error.message : 'Unknown connection error';
     }
 
     const durationMs = Date.now() - started;
-    const success = statusCode !== null && statusCode >= 200 && statusCode < 300;
+    const success =
+      statusCode !== null && statusCode >= 200 && statusCode < 300;
     const retryable = statusCode === null || isRetryableStatus(statusCode);
     const maxAttempts = Number(job.opts.attempts ?? MAX_DELIVERY_ATTEMPTS);
     const hasAttemptsLeft = job.attemptsMade + 1 < maxAttempts;
-    const finalStatus = success ? DeliveryStatus.DELIVERED : retryable && hasAttemptsLeft ? DeliveryStatus.RETRYING : DeliveryStatus.FAILED;
-    const nextAttemptAt = finalStatus === DeliveryStatus.RETRYING ? new Date(Date.now() + retryDelay(job.attemptsMade + 1)) : null;
+    const finalStatus = success
+      ? DeliveryStatus.DELIVERED
+      : retryable && hasAttemptsLeft
+        ? DeliveryStatus.RETRYING
+        : DeliveryStatus.FAILED;
+    const nextAttemptAt =
+      finalStatus === DeliveryStatus.RETRYING
+        ? new Date(Date.now() + retryDelay(job.attemptsMade + 1))
+        : null;
 
     await this.prisma.$transaction(async (tx: PrismaLike) => {
       await tx.deliveryAttempt.create({
-        data: { deliveryId: delivery.id, attemptNumber, statusCode, responseBody, error: errorMessage, durationMs },
+        data: {
+          deliveryId: delivery.id,
+          attemptNumber,
+          statusCode,
+          responseBody,
+          error: errorMessage,
+          durationMs,
+        },
       });
       await tx.delivery.update({
         where: { id: delivery.id },
@@ -97,4 +127,3 @@ export class DeliveryProcessor {
     throw new Error(message);
   }
 }
-

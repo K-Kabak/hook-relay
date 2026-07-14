@@ -16,4 +16,3 @@ export function isRetryableStatus(status: number): boolean {
 export function truncateResponseBody(body: string): string {
   return body.slice(0, RESPONSE_BODY_LIMIT);
 }
-

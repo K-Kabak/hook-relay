@@ -1,7 +1,9 @@
 import { z } from 'zod';
 
 const schema = z.object({
-  NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
+  NODE_ENV: z
+    .enum(['development', 'test', 'production'])
+    .default('development'),
   DATABASE_URL: z.string().min(1),
   REDIS_URL: z.string().url(),
   JWT_SECRET: z.string().min(32),
@@ -19,4 +21,3 @@ export function config(): AppConfig {
   cached ??= schema.parse(process.env);
   return cached;
 }
-

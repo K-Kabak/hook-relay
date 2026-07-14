@@ -7,11 +7,20 @@ export type WebhookEnvelope = {
   data: Record<string, unknown>;
 };
 
-export function signaturePayload(id: string, timestamp: string, rawBody: string): string {
+export function signaturePayload(
+  id: string,
+  timestamp: string,
+  rawBody: string,
+): string {
   return `${id}.${timestamp}.${rawBody}`;
 }
 
-export function signWebhook(id: string, timestamp: string, rawBody: string, secret: string): string {
+export function signWebhook(
+  id: string,
+  timestamp: string,
+  rawBody: string,
+  secret: string,
+): string {
   const digest = createHmac('sha256', secret)
     .update(signaturePayload(id, timestamp, rawBody))
     .digest('hex');
@@ -29,4 +38,3 @@ export function verifyWebhookSignature(
   const actual = Buffer.from(signature);
   return expected.length === actual.length && timingSafeEqual(expected, actual);
 }
-

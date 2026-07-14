@@ -1,4 +1,49 @@
 'use client';
-import {useQuery} from '@tanstack/react-query';import Link from 'next/link';import {useParams} from 'next/navigation';import {api,EventItem,formatDate} from '@/lib/api';import {Empty,ErrorMessage} from '@/components/ui';
-export default function Events(){const {projectId}=useParams<{projectId:string}>();const q=useQuery({queryKey:['events',projectId],queryFn:()=>api<EventItem[]>(`/projects/${projectId}/events`)});return <div className="panel table-wrap"><ErrorMessage error={q.error}/>{!q.data?.length?<Empty title="No events received" detail="Use your API key and POST /api/v1/events."/>:<table className="table"><thead><tr><th>Type</th><th>Event ID</th><th>Deliveries</th><th>Received</th></tr></thead><tbody>{q.data.map(e=><tr key={e.id}><td><Link href={`/projects/${projectId}/events/${e.id}`}><strong>{e.type}</strong></Link></td><td className="mono">{e.id}</td><td>{e._count?.deliveries}</td><td>{formatDate(e.createdAt)}</td></tr>)}</tbody></table>}</div>}
-
+import { useQuery } from '@tanstack/react-query';
+import Link from 'next/link';
+import { useParams } from 'next/navigation';
+import { api, EventItem, formatDate } from '@/lib/api';
+import { Empty, ErrorMessage } from '@/components/ui';
+export default function Events() {
+  const { projectId } = useParams<{ projectId: string }>();
+  const q = useQuery({
+    queryKey: ['events', projectId],
+    queryFn: () => api<EventItem[]>(`/projects/${projectId}/events`),
+  });
+  return (
+    <div className="panel table-wrap">
+      <ErrorMessage error={q.error} />
+      {!q.data?.length ? (
+        <Empty
+          title="No events received"
+          detail="Use your API key and POST /api/v1/events."
+        />
+      ) : (
+        <table className="table">
+          <thead>
+            <tr>
+              <th>Type</th>
+              <th>Event ID</th>
+              <th>Deliveries</th>
+              <th>Received</th>
+            </tr>
+          </thead>
+          <tbody>
+            {q.data.map((e) => (
+              <tr key={e.id}>
+                <td>
+                  <Link href={`/projects/${projectId}/events/${e.id}`}>
+                    <strong>{e.type}</strong>
+                  </Link>
+                </td>
+                <td className="mono">{e.id}</td>
+                <td>{e._count?.deliveries}</td>
+                <td>{formatDate(e.createdAt)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+    </div>
+  );
+}

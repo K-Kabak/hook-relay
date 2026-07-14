@@ -52,14 +52,18 @@ export class AuthGuard implements CanActivate {
   }
 }
 
-export const CurrentUserId = createParamDecorator((_data: unknown, ctx: ExecutionContext) =>
-  ctx.switchToHttp().getRequest<AuthRequest>().userId,
+export const CurrentUserId = createParamDecorator(
+  (_data: unknown, ctx: ExecutionContext) =>
+    ctx.switchToHttp().getRequest<AuthRequest>().userId,
 );
 
 @ApiTags('Authentication')
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly prisma: PrismaService, private readonly jwt: JwtService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly jwt: JwtService,
+  ) {}
 
   private async setSession(response: Response, userId: string) {
     const token = await this.jwt.signAsync({ sub: userId });
@@ -73,19 +77,35 @@ export class AuthController {
 
   @Post('register')
   @ApiOperation({ summary: 'Register and start a session' })
-  async register(@Body() dto: RegisterDto, @Res({ passthrough: true }) response: Response) {
+  async register(
+    @Body() dto: RegisterDto,
+    @Res({ passthrough: true }) response: Response,
+  ) {
     const email = dto.email.trim().toLowerCase();
-    if (await this.prisma.user.findUnique({ where: { email } })) throw new ConflictException('Email already registered');
-    const user = await this.prisma.user.create({ data: { email, name: dto.name.trim(), passwordHash: await argon2.hash(dto.password) } });
+    if (await this.prisma.user.findUnique({ where: { email } }))
+      throw new ConflictException('Email already registered');
+    const user = await this.prisma.user.create({
+      data: {
+        email,
+        name: dto.name.trim(),
+        passwordHash: await argon2.hash(dto.password),
+      },
+    });
     await this.setSession(response, user.id);
     return { id: user.id, email: user.email, name: user.name };
   }
 
   @Post('login')
   @ApiOperation({ summary: 'Log in with email and password' })
-  async login(@Body() dto: LoginDto, @Res({ passthrough: true }) response: Response) {
-    const user = await this.prisma.user.findUnique({ where: { email: dto.email.trim().toLowerCase() } });
-    if (!user || !(await argon2.verify(user.passwordHash, dto.password))) throw new UnauthorizedException('Invalid credentials');
+  async login(
+    @Body() dto: LoginDto,
+    @Res({ passthrough: true }) response: Response,
+  ) {
+    const user = await this.prisma.user.findUnique({
+      where: { email: dto.email.trim().toLowerCase() },
+    });
+    if (!user || !(await argon2.verify(user.passwordHash, dto.password)))
+      throw new UnauthorizedException('Invalid credentials');
     await this.setSession(response, user.id);
     return { id: user.id, email: user.email, name: user.name };
   }
@@ -93,7 +113,11 @@ export class AuthController {
   @Post('logout')
   @ApiOperation({ summary: 'Clear the current session' })
   logout(@Res({ passthrough: true }) response: Response) {
-    response.clearCookie(COOKIE, { httpOnly: true, sameSite: 'lax', secure: config().NODE_ENV === 'production' });
+    response.clearCookie(COOKIE, {
+      httpOnly: true,
+      sameSite: 'lax',
+      secure: config().NODE_ENV === 'production',
+    });
     return { success: true };
   }
 
@@ -102,6 +126,9 @@ export class AuthController {
   @ApiOperation({ summary: 'Return the current user' })
   @UseGuards(AuthGuard)
   async me(@CurrentUserId() userId: string) {
-    return this.prisma.user.findUniqueOrThrow({ where: { id: userId }, select: { id: true, email: true, name: true, createdAt: true } });
+    return this.prisma.user.findUniqueOrThrow({
+      where: { id: userId },
+      select: { id: true, email: true, name: true, createdAt: true },
+    });
   }
 }

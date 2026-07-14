@@ -11,7 +11,13 @@ async function bootstrap() {
   app.use(cookieParser());
   app.enableCors({ origin: config().WEB_ORIGIN, credentials: true });
   app.enableShutdownHooks();
-  app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true, forbidNonWhitelisted: true }));
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true,
+      transform: true,
+      forbidNonWhitelisted: true,
+    }),
+  );
   app.setGlobalPrefix('api/v1', { exclude: ['health', 'dev/receiver/:mode'] });
   const document = SwaggerModule.createDocument(
     app,
@@ -25,9 +31,12 @@ async function bootstrap() {
   );
   SwaggerModule.setup('docs', app, document);
   const server = app.getHttpAdapter().getInstance();
-  server.get('/health', (_request: unknown, response: { json: (body: unknown) => void }) => response.json({ status: 'ok' }));
+  server.get(
+    '/health',
+    (_request: unknown, response: { json: (body: unknown) => void }) =>
+      response.json({ status: 'ok' }),
+  );
   await app.listen(config().API_PORT, '0.0.0.0');
 }
 
 void bootstrap();
-

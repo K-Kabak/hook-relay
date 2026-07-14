@@ -4,7 +4,8 @@ import { DeliveryStatus, PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
 
 async function main() {
-  if (process.env.NODE_ENV === 'production') throw new Error('Demo seed is disabled in production');
+  if (process.env.NODE_ENV === 'production')
+    throw new Error('Demo seed is disabled in production');
   const passwordHash = await argon2.hash('demo-password');
   const user = await prisma.user.upsert({
     where: { email: 'demo@hookrelay.local' },
@@ -28,17 +29,35 @@ async function main() {
     },
   });
   const event = await prisma.event.upsert({
-    where: { projectId_idempotencyKey: { projectId: project.id, idempotencyKey: 'demo-seed' } },
+    where: {
+      projectId_idempotencyKey: {
+        projectId: project.id,
+        idempotencyKey: 'demo-seed',
+      },
+    },
     update: {},
-    create: { projectId: project.id, type: 'demo.seeded', payload: { ready: true }, idempotencyKey: 'demo-seed' },
+    create: {
+      projectId: project.id,
+      type: 'demo.seeded',
+      payload: { ready: true },
+      idempotencyKey: 'demo-seed',
+    },
   });
   await prisma.delivery.upsert({
-    where: { eventId_endpointId: { eventId: event.id, endpointId: '00000000-0000-4000-8000-000000000001' } },
+    where: {
+      eventId_endpointId: {
+        eventId: event.id,
+        endpointId: '00000000-0000-4000-8000-000000000001',
+      },
+    },
     update: {},
-    create: { eventId: event.id, endpointId: '00000000-0000-4000-8000-000000000001', status: DeliveryStatus.PENDING },
+    create: {
+      eventId: event.id,
+      endpointId: '00000000-0000-4000-8000-000000000001',
+      status: DeliveryStatus.PENDING,
+    },
   });
   console.log('Seeded demo@hookrelay.local / demo-password');
 }
 
 main().finally(() => prisma.$disconnect());
-

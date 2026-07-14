@@ -8,11 +8,11 @@ services:
       POSTGRES_PASSWORD: hookrelay
       POSTGRES_DB: hookrelay
     ports:
-      - "5432:5432"
+      - '5432:5432'
     volumes:
       - postgres-data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U hookrelay -d hookrelay"]
+      test: ['CMD-SHELL', 'pg_isready -U hookrelay -d hookrelay']
       interval: 5s
       timeout: 3s
       retries: 15
@@ -21,11 +21,11 @@ services:
     image: redis:8-alpine
     command: redis-server --appendonly yes
     ports:
-      - "6379:6379"
+      - '6379:6379'
     volumes:
       - redis-data:/data
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ['CMD', 'redis-cli', 'ping']
       interval: 5s
       timeout: 3s
       retries: 15
@@ -45,14 +45,20 @@ services:
       WEBHOOK_TIMEOUT_MS: 5000
     command: sh -c "corepack pnpm --filter @hookrelay/database migrate:deploy && corepack pnpm --filter @hookrelay/api start"
     ports:
-      - "3001:3001"
+      - '3001:3001'
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "node", "-e", "fetch('http://localhost:3001/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
+      test:
+        [
+          'CMD',
+          'node',
+          '-e',
+          "fetch('http://localhost:3001/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))",
+        ]
       interval: 10s
       timeout: 5s
       retries: 12
@@ -76,7 +82,7 @@ services:
       NODE_ENV: production
       NEXT_PUBLIC_API_URL: http://localhost:3001/api/v1
     ports:
-      - "3000:3000"
+      - '3000:3000'
     depends_on:
       api:
         condition: service_healthy
@@ -84,4 +90,3 @@ services:
 volumes:
   postgres-data:
   redis-data:
-

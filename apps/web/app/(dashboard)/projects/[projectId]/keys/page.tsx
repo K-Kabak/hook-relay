@@ -1,5 +1,113 @@
 'use client';
-import { useMutation,useQuery,useQueryClient } from '@tanstack/react-query';import {useParams} from 'next/navigation';import {useState} from 'react';import {api,formatDate} from '@/lib/api';import {Empty,ErrorMessage} from '@/components/ui';
-type Key={id:string;name:string;keyPrefix:string;createdAt:string;lastUsedAt?:string;revokedAt?:string;apiKey?:string};
-export default function Keys(){const {projectId}=useParams<{projectId:string}>();const qc=useQueryClient();const [name,setName]=useState('Primary');const [secret,setSecret]=useState('');const q=useQuery({queryKey:['keys',projectId],queryFn:()=>api<Key[]>(`/projects/${projectId}/api-keys`)});const create=useMutation({mutationFn:()=>api<Key>(`/projects/${projectId}/api-keys`,{method:'POST',body:JSON.stringify({name})}),onSuccess:(key)=>{setSecret(key.apiKey??'');void qc.invalidateQueries({queryKey:['keys',projectId]});}});const revoke=useMutation({mutationFn:(id:string)=>api(`/projects/${projectId}/api-keys/${id}/revoke`,{method:'POST'}),onSuccess:()=>void qc.invalidateQueries({queryKey:['keys',projectId]})});return <div className="stack"><ErrorMessage error={q.error??create.error??revoke.error}/>{secret&&<div className="secret"><strong>Copy this key now — it will not be shown again.</strong><code>{secret}</code></div>}<div className="panel"><form className="split" onSubmit={e=>{e.preventDefault();create.mutate();}}><input className="input" value={name} onChange={e=>setName(e.target.value)} required minLength={2}/><button className="button">Generate key</button></form></div><div className="panel table-wrap">{!q.data?.length?<Empty title="No API keys" detail="Generate a key to publish events."/>:<table className="table"><thead><tr><th>Name</th><th>Prefix</th><th>Created</th><th>Last used</th><th></th></tr></thead><tbody>{q.data.map(k=><tr key={k.id}><td>{k.name}</td><td className="mono">{k.keyPrefix}…</td><td>{formatDate(k.createdAt)}</td><td>{k.lastUsedAt?formatDate(k.lastUsedAt):'Never'}</td><td>{k.revokedAt?<span className="muted">Revoked</span>:<button className="button danger" onClick={()=>revoke.mutate(k.id)}>Revoke</button>}</td></tr>)}</tbody></table>}</div></div>}
-
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useParams } from 'next/navigation';
+import { useState } from 'react';
+import { api, formatDate } from '@/lib/api';
+import { Empty, ErrorMessage } from '@/components/ui';
+type Key = {
+  id: string;
+  name: string;
+  keyPrefix: string;
+  createdAt: string;
+  lastUsedAt?: string;
+  revokedAt?: string;
+  apiKey?: string;
+};
+export default function Keys() {
+  const { projectId } = useParams<{ projectId: string }>();
+  const qc = useQueryClient();
+  const [name, setName] = useState('Primary');
+  const [secret, setSecret] = useState('');
+  const q = useQuery({
+    queryKey: ['keys', projectId],
+    queryFn: () => api<Key[]>(`/projects/${projectId}/api-keys`),
+  });
+  const create = useMutation({
+    mutationFn: () =>
+      api<Key>(`/projects/${projectId}/api-keys`, {
+        method: 'POST',
+        body: JSON.stringify({ name }),
+      }),
+    onSuccess: (key) => {
+      setSecret(key.apiKey ?? '');
+      void qc.invalidateQueries({ queryKey: ['keys', projectId] });
+    },
+  });
+  const revoke = useMutation({
+    mutationFn: (id: string) =>
+      api(`/projects/${projectId}/api-keys/${id}/revoke`, { method: 'POST' }),
+    onSuccess: () =>
+      void qc.invalidateQueries({ queryKey: ['keys', projectId] }),
+  });
+  return (
+    <div className="stack">
+      <ErrorMessage error={q.error ?? create.error ?? revoke.error} />
+      {secret && (
+        <div className="secret">
+          <strong>Copy this key now — it will not be shown again.</strong>
+          <code>{secret}</code>
+        </div>
+      )}
+      <div className="panel">
+        <form
+          className="split"
+          onSubmit={(e) => {
+            e.preventDefault();
+            create.mutate();
+          }}
+        >
+          <input
+            className="input"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            required
+            minLength={2}
+          />
+          <button className="button">Generate key</button>
+        </form>
+      </div>
+      <div className="panel table-wrap">
+        {!q.data?.length ? (
+          <Empty
+            title="No API keys"
+            detail="Generate a key to publish events."
+          />
+        ) : (
+          <table className="table">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Prefix</th>
+                <th>Created</th>
+                <th>Last used</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {q.data.map((k) => (
+                <tr key={k.id}>
+                  <td>{k.name}</td>
+                  <td className="mono">{k.keyPrefix}…</td>
+                  <td>{formatDate(k.createdAt)}</td>
+                  <td>{k.lastUsedAt ? formatDate(k.lastUsedAt) : 'Never'}</td>
+                  <td>
+                    {k.revokedAt ? (
+                      <span className="muted">Revoked</span>
+                    ) : (
+                      <button
+                        className="button danger"
+                        onClick={() => revoke.mutate(k.id)}
+                      >
+                        Revoke
+                      </button>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+    </div>
+  );
+}

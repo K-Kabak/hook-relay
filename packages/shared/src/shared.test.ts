@@ -13,14 +13,32 @@ import {
 describe('webhook signatures', () => {
   it('generates and verifies an HMAC while rejecting tampering', () => {
     const signature = signWebhook('evt_1', '123', '{"ok":true}', 'secret');
-    expect(verifyWebhookSignature('evt_1', '123', '{"ok":true}', 'secret', signature)).toBe(true);
-    expect(verifyWebhookSignature('evt_1', '123', '{"ok":false}', 'secret', signature)).toBe(false);
+    expect(
+      verifyWebhookSignature(
+        'evt_1',
+        '123',
+        '{"ok":true}',
+        'secret',
+        signature,
+      ),
+    ).toBe(true);
+    expect(
+      verifyWebhookSignature(
+        'evt_1',
+        '123',
+        '{"ok":false}',
+        'secret',
+        signature,
+      ),
+    ).toBe(false);
   });
 });
 
 describe('delivery helpers', () => {
   it('uses the documented retry schedule', () => {
-    expect([retryDelay(1), retryDelay(2), retryDelay(3)]).toEqual([30_000, 120_000, 600_000]);
+    expect([retryDelay(1), retryDelay(2), retryDelay(3)]).toEqual([
+      30_000, 120_000, 600_000,
+    ]);
   });
 
   it('classifies retryable status codes', () => {
@@ -46,4 +64,3 @@ describe('API keys', () => {
     expect(verifyApiKey(`${key}x`, hash, 'pepper')).toBe(false);
   });
 });
-
