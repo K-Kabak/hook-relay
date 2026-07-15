@@ -1,5 +1,8 @@
 FROM node:24-bookworm-slim
 WORKDIR /app
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends ca-certificates openssl \
+  && rm -rf /var/lib/apt/lists/*
 RUN corepack enable
 COPY . .
 RUN corepack pnpm install --frozen-lockfile \
@@ -9,4 +12,3 @@ RUN corepack pnpm install --frozen-lockfile \
   && corepack pnpm --filter @hookrelay/api build
 EXPOSE 3001
 CMD ["corepack", "pnpm", "--filter", "@hookrelay/api", "start"]
-
